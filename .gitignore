@@ -25,3 +25,5 @@ components.json
 coverage
 lib-cov
 *.log
+
+/app/uploads

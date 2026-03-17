@@ -9,3 +9,5 @@ openpyxl==3.1.5
 # 其他
 python-multipart==0.0.22  # 处理文件上传
 APScheduler==3.11.2      # 定时任务
+slowapi==0.1.9           # 限流
+limits==5.8.0            # 限流依赖

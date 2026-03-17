@@ -1,7 +1,10 @@
 #  Copyright (c) 2017-2026 null. All rights reserved.
 from fastapi import FastAPI
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.api.convert import router as convert_router
+from app.utils.limiter import limiter
 from app.utils.scheduler import start_scheduler, stop_scheduler
 
 # 创建FastAPI应用
@@ -10,6 +13,10 @@ app = FastAPI(
     description="提供 Hello Tool 的RESTful接口",
     version="1.0.0"
 )
+
+# 添加限流异常处理
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 注册路由
 app.include_router(convert_router)
