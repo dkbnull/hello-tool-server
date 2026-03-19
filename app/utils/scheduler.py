@@ -5,6 +5,7 @@ import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.utils.file_utils import UPLOAD_DIR
+from app.utils.logger import logger
 
 # 创建后台调度器
 scheduler = BackgroundScheduler()
@@ -28,9 +29,9 @@ def clean_expired_files():
             if file_mtime < ten_minutes_ago:
                 try:
                     os.remove(file_path)
-                    print(f"已删除过期文件: {filename}")
+                    logger.info(f"已删除过期文件: {filename}")
                 except Exception as e:
-                    print(f"删除文件 {filename} 时出错: {str(e)}")
+                    logger.error(f"删除文件 {filename} 时出错: {str(e)}")
 
 
 def start_scheduler():
@@ -44,10 +45,10 @@ def start_scheduler():
         replace_existing=True
     )
     scheduler.start()
-    print("定时任务调度器已启动")
+    logger.info("定时任务调度器已启动")
 
 
 def stop_scheduler():
     """停止定时任务调度器"""
     scheduler.shutdown()
-    print("定时任务调度器已停止")
+    logger.info("定时任务调度器已停止")

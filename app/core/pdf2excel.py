@@ -6,6 +6,18 @@ from openpyxl import Workbook
 from app.utils.file_utils import get_file_path
 
 
+def _save_excel_file(workbook, excel_filename: str) -> str:
+    """
+    保存Excel文件
+    :param workbook: Workbook对象
+    :param excel_filename: 输出的Excel文件名
+    :return: Excel文件完整路径
+    """
+    excel_path = get_file_path(excel_filename)
+    workbook.save(excel_path)
+    return excel_path
+
+
 def convert_pdf_table_to_excel(pdf_filename: str, excel_filename: str) -> str:
     """
     PDF表格转Excel（结构化表格）
@@ -14,7 +26,6 @@ def convert_pdf_table_to_excel(pdf_filename: str, excel_filename: str) -> str:
     :return: Excel文件完整路径
     """
     pdf_path = get_file_path(pdf_filename)
-    excel_path = get_file_path(excel_filename)
 
     try:
         # 提取所有表格
@@ -31,8 +42,7 @@ def convert_pdf_table_to_excel(pdf_filename: str, excel_filename: str) -> str:
             for row in table.values.tolist():
                 ws.append(row)
 
-        wb.save(excel_path)
-        return excel_path
+        return _save_excel_file(wb, excel_filename)
     except Exception as e:
         raise RuntimeError(f"PDF表格转Excel失败：{str(e)}")
 
@@ -45,7 +55,6 @@ def convert_pdf_text_to_excel(pdf_filename: str, excel_filename: str) -> str:
     :return: Excel文件完整路径
     """
     pdf_path = get_file_path(pdf_filename)
-    excel_path = get_file_path(excel_filename)
 
     try:
         with pdfplumber.open(pdf_path) as pdf:
@@ -62,7 +71,6 @@ def convert_pdf_text_to_excel(pdf_filename: str, excel_filename: str) -> str:
                         ws.append([line])
                     ws.append([""])  # 空行分隔
 
-        wb.save(excel_path)
-        return excel_path
+        return _save_excel_file(wb, excel_filename)
     except Exception as e:
         raise RuntimeError(f"PDF文字转Excel失败：{str(e)}")

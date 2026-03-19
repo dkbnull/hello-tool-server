@@ -49,3 +49,11 @@ def get_file_path(filename: str) -> str:
     :return: 完整路径
     """
     return os.path.join(UPLOAD_DIR, filename)
+
+
+def ensure_directory(directory: str) -> None:
+    """
+    确保目录存在
+    :param directory: 目录路径
+    """
+    os.makedirs(directory, exist_ok=True)
