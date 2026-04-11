@@ -4,29 +4,25 @@ import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app.utils.file_utils import UPLOAD_DIR
+from app.core.config import UPLOAD_DIR, FILE_EXPIRY_MINUTES, CLEANUP_INTERVAL_MINUTES
 from app.utils.logger import logger
 
-# 创建后台调度器
 scheduler = BackgroundScheduler()
 
 
 def clean_expired_files():
-    """清理过期文件：10分钟未下载的转换文件和10分钟之前上传的PDF文件"""
+    """清理过期文件"""
     if not os.path.exists(UPLOAD_DIR):
         return
 
     current_time = time.time()
-    ten_minutes_ago = current_time - 10 * 60  # 10分钟
+    expiry_threshold = current_time - FILE_EXPIRY_MINUTES * 60
 
     for filename in os.listdir(UPLOAD_DIR):
         file_path = os.path.join(UPLOAD_DIR, filename)
         if os.path.isfile(file_path):
-            # 获取文件的修改时间
             file_mtime = os.path.getmtime(file_path)
-
-            # 检查是否过期
-            if file_mtime < ten_minutes_ago:
+            if file_mtime < expiry_threshold:
                 try:
                     os.remove(file_path)
                     logger.info(f"已删除过期文件: {filename}")
@@ -36,13 +32,12 @@ def clean_expired_files():
 
 def start_scheduler():
     """启动定时任务调度器"""
-    # 每5分钟执行一次清理任务
     scheduler.add_job(
         clean_expired_files,
         'interval',
-        minutes=5,
+        minutes=CLEANUP_INTERVAL_MINUTES,
         id='clean_expired_files',
-        replace_existing=True
+        replace_existing=True,
     )
     scheduler.start()
     logger.info("定时任务调度器已启动")

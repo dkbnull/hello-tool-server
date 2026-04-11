@@ -16,7 +16,6 @@ def convert_pdf_to_word(pdf_filename: str, word_filename: str) -> str:
 
     try:
         cv = Converter(pdf_path)
-        # 转换全部页码
         cv.convert(word_path, start=0, end=None)
         cv.close()
         return word_path

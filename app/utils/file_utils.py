@@ -3,13 +3,7 @@ import os
 import uuid
 from datetime import datetime
 
-# 项目根目录
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# 上传/输出文件目录
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-
-# 确保目录存在
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+from app.core.config import UPLOAD_DIR
 
 
 def get_unique_filename(original_name: str, ext: str = None) -> str:
@@ -19,12 +13,9 @@ def get_unique_filename(original_name: str, ext: str = None) -> str:
     :param ext: 目标后缀（如 .docx/.xlsx，可选）
     :return: 唯一文件名
     """
-    # 提取原始后缀（如果未指定目标后缀）
     if ext is None:
         ext = os.path.splitext(original_name)[1]
-    # 生成唯一标识（时间戳+随机字符串）
     unique_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}"
-    # 拼接文件名
     return f"{unique_id}{ext}"
 
 
@@ -49,11 +40,3 @@ def get_file_path(filename: str) -> str:
     :return: 完整路径
     """
     return os.path.join(UPLOAD_DIR, filename)
-
-
-def ensure_directory(directory: str) -> None:
-    """
-    确保目录存在
-    :param directory: 目录路径
-    """
-    os.makedirs(directory, exist_ok=True)
