@@ -5,6 +5,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Response, Reques
 
 from app.core.pdf2docx import convert_pdf_to_word
 from app.core.pdf2excel import convert_pdf_table_to_excel, convert_pdf_text_to_excel
+from app.core.pdf_scan2docx import convert_pdf_scan_to_word
 from app.utils.api_utils import process_uploaded_file, cleanup_file, create_response
 from app.utils.file_utils import get_unique_filename, get_file_path
 from app.utils.limiter import limiter
@@ -61,6 +62,14 @@ async def pdf_table_to_excel(request: Request, file: UploadFile = File(...)):
 async def pdf_text_to_excel(request: Request, file: UploadFile = File(...)):
     return await handle_conversion_request(
         request, file, convert_pdf_text_to_excel, ".xlsx", "PDF文字转Excel"
+    )
+
+
+@router.post("/pdf-scan-to-word", summary="PDF扫描件转Word（OCR识别图片文字）")
+@limiter.limit("30/minute")
+async def pdf_scan_to_word(request: Request, file: UploadFile = File(...)):
+    return await handle_conversion_request(
+        request, file, convert_pdf_scan_to_word, ".docx", "PDF扫描件转Word"
     )
 
 

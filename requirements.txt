@@ -6,6 +6,9 @@ pdf2docx==0.5.12
 tabula-py==2.10.0
 pdfplumber==0.11.9
 openpyxl==3.1.5
+PyMuPDF>=1.26.7
+python-docx==1.1.2
+rapidocr-onnxruntime==1.2.3
 # 其他
 python-multipart==0.0.22  # 处理文件上传
 APScheduler==3.11.2      # 定时任务
