@@ -1,4 +1,5 @@
 #  Copyright (c) 2017-2026 null. All rights reserved.
+"""PDF转Excel模块，支持结构化表格和纯文字两种转换模式"""
 import pdfplumber
 import tabula
 from openpyxl import Workbook
@@ -6,9 +7,10 @@ from openpyxl import Workbook
 from app.utils.file_utils import get_file_path
 
 
-def _save_excel_file(workbook, excel_filename: str) -> str:
+def _save_excel_file(workbook: Workbook, excel_filename: str) -> str:
     """
     保存Excel文件
+
     :param workbook: Workbook对象
     :param excel_filename: 输出的Excel文件名
     :return: Excel文件完整路径
@@ -21,28 +23,30 @@ def _save_excel_file(workbook, excel_filename: str) -> str:
 def convert_pdf_table_to_excel(pdf_filename: str, excel_filename: str) -> str:
     """
     PDF表格转Excel（结构化表格）
+
     :param pdf_filename: 上传的PDF文件名
     :param excel_filename: 输出的Excel文件名
     :return: Excel文件完整路径
+    :raises RuntimeError: 转换过程失败或未检测到表格时抛出
     """
     pdf_path = get_file_path(pdf_filename)
 
     try:
-        # 提取所有表格
         tables = tabula.read_pdf(pdf_path, pages="all", multiple_tables=True)
         if not tables:
             raise RuntimeError("未在PDF中检测到结构化表格")
 
         wb = Workbook()
-        wb.remove(wb.active)  # 删除默认工作表
+        wb.remove(wb.active)
 
-        # 逐个表格写入不同工作表
         for i, table in enumerate(tables):
             ws = wb.create_sheet(title=f"表格{i + 1}")
             for row in table.values.tolist():
                 ws.append(row)
 
         return _save_excel_file(wb, excel_filename)
+    except RuntimeError:
+        raise
     except Exception as e:
         raise RuntimeError(f"PDF表格转Excel失败：{str(e)}")
 
@@ -50,9 +54,11 @@ def convert_pdf_table_to_excel(pdf_filename: str, excel_filename: str) -> str:
 def convert_pdf_text_to_excel(pdf_filename: str, excel_filename: str) -> str:
     """
     PDF纯文字转Excel（无表格场景）
+
     :param pdf_filename: 上传的PDF文件名
     :param excel_filename: 输出的Excel文件名
     :return: Excel文件完整路径
+    :raises RuntimeError: 转换过程失败时抛出
     """
     pdf_path = get_file_path(pdf_filename)
 
@@ -62,14 +68,13 @@ def convert_pdf_text_to_excel(pdf_filename: str, excel_filename: str) -> str:
             ws = wb.active
             ws.title = "PDF文字内容"
 
-            # 逐页提取文字
             for page_num, page in enumerate(pdf.pages, 1):
                 text = page.extract_text()
                 if text:
                     ws.append([f"==== 第{page_num}页 ===="])
                     for line in text.split("\n"):
                         ws.append([line])
-                    ws.append([""])  # 空行分隔
+                    ws.append([""])
 
         return _save_excel_file(wb, excel_filename)
     except Exception as e:

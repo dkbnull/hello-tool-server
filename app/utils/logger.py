@@ -1,9 +1,10 @@
 #  Copyright (c) 2017-2026 null. All rights reserved.
+"""日志模块，提供统一的日志记录器"""
 import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-from app.core.config import LOG_DIR
+from app.core.config import settings
 
 logger = logging.getLogger("pdf_converter")
 logger.setLevel(logging.INFO)
@@ -17,7 +18,7 @@ console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 
 file_handler = RotatingFileHandler(
-    os.path.join(LOG_DIR, "pdf_converter.log"),
+    os.path.join(settings.LOG_DIR, "pdf_converter.log"),
     maxBytes=10 * 1024 * 1024,
     backupCount=5,
     encoding='utf-8'

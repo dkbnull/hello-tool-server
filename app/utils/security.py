@@ -1,5 +1,5 @@
 #  Copyright (c) 2017-2026 null. All rights reserved.
-import os
+"""安全中间件模块，提供IP过滤、速率限制、CSRF防护等安全功能"""
 import secrets
 import time
 from typing import Dict, List, Optional, Tuple
@@ -7,12 +7,18 @@ from typing import Dict, List, Optional, Tuple
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.core.config import SECURITY_CONFIG
+from app.core.config import settings
+from app.utils.logger import logger
 from app.utils.request import get_client_ip
 
 
 def _validate_headers(request: Request) -> bool:
-    """校验请求头"""
+    """
+    校验请求头合法性
+
+    :param request: FastAPI 请求对象
+    :return: 请求头是否合法
+    """
     user_agent = request.headers.get("User-Agent")
     if not user_agent:
         return False
@@ -30,13 +36,20 @@ def _validate_headers(request: Request) -> bool:
 
 
 async def _validate_csrf_token(request: Request, csrf_tokens: Dict[str, Tuple[str, float]]) -> bool:
-    """验证CSRF token"""
+    """
+    验证CSRF token有效性
+
+    :param request: FastAPI 请求对象
+    :param csrf_tokens: 存储的CSRF token字典 {client_ip: (token, expiry)}
+    :return: token是否有效
+    """
     token = request.headers.get("X-CSRF-Token")
     if not token:
         try:
             form_data = await request.form()
             token = form_data.get("csrf_token")
         except Exception:
+            logger.debug("从form数据获取CSRF token失败，请求URL: %s", request.url.path)
             pass
 
     cookie_token = request.cookies.get("csrf_token")
@@ -53,25 +66,17 @@ async def _validate_csrf_token(request: Request, csrf_tokens: Dict[str, Tuple[st
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
-    """安全中间件"""
+    """安全中间件，负责IP过滤、速率限制和CSRF防护"""
 
     _instance: Optional["SecurityMiddleware"] = None
 
-    def __init__(
-            self,
-            app,
-            allowed_ips: Optional[List[str]] = None,
-            blocked_ips: Optional[List[str]] = None,
-            rate_limit_per_ip: int = 5,
-            rate_limit_window: int = 1,
-            csrf_token_expiry: int = 3600,
-    ):
+    def __init__(self, app):
         super().__init__(app)
-        self.allowed_ips = allowed_ips or []
-        self.blocked_ips = blocked_ips or []
-        self.rate_limit_per_ip = rate_limit_per_ip
-        self.rate_limit_window = rate_limit_window
-        self.csrf_token_expiry = csrf_token_expiry
+        self.allowed_ips: List[str] = settings.allowed_ips_list
+        self.blocked_ips: List[str] = settings.blocked_ips_list
+        self.rate_limit_per_ip: int = settings.RATE_LIMIT_PER_IP
+        self.rate_limit_window: int = settings.RATE_LIMIT_WINDOW
+        self.csrf_token_expiry: int = settings.CSRF_TOKEN_EXPIRY
         self.ip_requests: Dict[str, List[float]] = {}
         self.csrf_tokens: Dict[str, Tuple[str, float]] = {}
         SecurityMiddleware._instance = self
@@ -115,12 +120,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if request.method == "GET":
             self._clean_expired_csrf_tokens()
             token = self.get_csrf_token(client_ip)
-            secure = os.environ.get("SECURE_COOKIE", "True").lower() == "true"
             response.set_cookie(
                 key="csrf_token",
                 value=token,
                 httponly=True,
-                secure=secure,
+                secure=settings.SECURE_COOKIE,
                 samesite="lax",
                 max_age=self.csrf_token_expiry,
             )
@@ -128,7 +132,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return response
 
     def _check_rate_limit(self, client_ip: str) -> bool:
-        """检查速率限制"""
+        """
+        检查指定IP的请求速率是否超限
+
+        :param client_ip: 客户端IP地址
+        :return: 是否在速率限制范围内
+        """
         current_time = time.time()
         if client_ip in self.ip_requests:
             self.ip_requests[client_ip] = [
@@ -145,7 +154,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return True
 
     def _generate_csrf_token(self, client_ip: str) -> str:
-        """生成CSRF token"""
+        """
+        为指定IP生成新的CSRF token
+
+        :param client_ip: 客户端IP地址
+        :return: 生成的CSRF token
+        """
         token = secrets.token_hex(32)
         expiry = time.time() + self.csrf_token_expiry
         self.csrf_tokens[client_ip] = (token, expiry)
@@ -162,7 +176,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             del self.csrf_tokens[ip]
 
     def get_csrf_token(self, client_ip: str) -> str:
-        """获取当前CSRF token，如果不存在或已过期则生成新的"""
+        """
+        获取当前CSRF token，如果不存在或已过期则生成新的
+
+        :param client_ip: 客户端IP地址
+        :return: 有效的CSRF token
+        """
         current_time = time.time()
         if client_ip not in self.csrf_tokens or current_time >= self.csrf_tokens[client_ip][1]:
             return self._generate_csrf_token(client_ip)
@@ -170,8 +189,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     @classmethod
     def get_instance(cls) -> Optional["SecurityMiddleware"]:
-        """获取中间件实例"""
+        """
+        获取中间件单例实例
+
+        :return: SecurityMiddleware 实例，未初始化时返回 None
+        """
         return cls._instance
 
 
-__all__ = ["SecurityMiddleware", "SECURITY_CONFIG"]
+__all__ = ["SecurityMiddleware"]

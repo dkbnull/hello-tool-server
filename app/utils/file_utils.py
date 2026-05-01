@@ -1,14 +1,16 @@
 #  Copyright (c) 2017-2026 null. All rights reserved.
+"""文件工具模块，提供文件名生成、校验、路径获取等功能"""
 import os
 import uuid
 from datetime import datetime
 
-from app.core.config import UPLOAD_DIR
+from app.core.config import settings
 
 
 def get_unique_filename(original_name: str, ext: str = None) -> str:
     """
     生成唯一文件名（避免重复）
+
     :param original_name: 原始文件名
     :param ext: 目标后缀（如 .docx/.xlsx，可选）
     :return: 唯一文件名
@@ -22,6 +24,7 @@ def get_unique_filename(original_name: str, ext: str = None) -> str:
 def validate_file(file, allowed_extensions: list) -> bool:
     """
     校验上传文件的后缀
+
     :param file: 上传的文件对象
     :param allowed_extensions: 允许的后缀列表（如 ['.pdf']）
     :return: 校验结果
@@ -36,7 +39,8 @@ def validate_file(file, allowed_extensions: list) -> bool:
 def get_file_path(filename: str) -> str:
     """
     获取文件的完整路径
+
     :param filename: 文件名
     :return: 完整路径
     """
-    return os.path.join(UPLOAD_DIR, filename)
+    return os.path.join(settings.UPLOAD_DIR, filename)

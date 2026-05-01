@@ -17,3 +17,4 @@ limits==5.8.0            # 限流依赖
 python-dotenv==1.2.2      # 加载.env文件
 starlette==1.0.0
 pydantic==2.12.5
+pydantic-settings==2.14.0

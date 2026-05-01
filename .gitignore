@@ -25,5 +25,6 @@ components.json
 coverage
 lib-cov
 *.log
+.trae
 
 /app/uploads
