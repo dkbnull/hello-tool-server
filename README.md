@@ -10,20 +10,21 @@
     <img src="https://img.shields.io/badge/License-Apache%202.0-blue">
 </p>
 
-一个基于FastAPI的工具类服务，提供PDF转Word、PDF表格/文字转Excel等功能。
+一个基于 FastAPI 的工具类服务，提供 PDF 转 Word、PDF 表格/文字转 Excel、PDF 扫描件 OCR 转 Word 等功能。
 
 ## 功能特性
 
-- PDF转Word（完整保留格式）
-- PDF表格转Excel（结构化表格提取）
-- PDF纯文字转Excel（文本内容提取）
+- PDF 转 Word（完整保留格式）
+- PDF 表格转 Excel（结构化表格提取）
+- PDF 纯文字转 Excel（文本内容提取）
+- PDF 扫描件转 Word（OCR 识别图片文字）
 - 健康检查接口
-- IP访问控制（白名单/黑名单）
-- CSRF防护
+- IP 访问控制（白名单/黑名单）
+- CSRF 防护
 - 多层限流保护
 - 定时清理过期文件
 
-## API文档
+## API 文档
 
 服务启动后访问：
 
@@ -39,13 +40,19 @@ curl -c cookies.txt http://localhost:8000/
 # 2. 提取 CSRF Token
 CSRF_TOKEN=$(grep csrf_token cookies.txt | awk '{print $7}')
 
-# 3. 上传文件转换
+# 3. 上传文件转换（PDF 转 Word）
 curl -X POST http://localhost:8000/convert/pdf-to-word \
   -b cookies.txt \
   -H "X-CSRF-Token: $CSRF_TOKEN" \
   -F "file=@example.pdf"
 
-# 4. 下载转换结果
+# 4. 上传文件转换（PDF 扫描件转 Word）
+curl -X POST http://localhost:8000/convert/pdf-scan-to-word \
+  -b cookies.txt \
+  -H "X-CSRF-Token: $CSRF_TOKEN" \
+  -F "file=@scan.pdf"
+
+# 5. 下载转换结果
 curl -O http://localhost:8000/convert/download/<filename>
 ```
 
@@ -59,8 +66,16 @@ hello-tool-server/
 │   │   └── convert.py          # 文件转换接口
 │   ├── core/                   # 核心业务层
 │   │   ├── config.py           # 集中配置管理
-│   │   ├── pdf2docx.py         # PDF转Word实现
-│   │   └── pdf2excel.py        # PDF转Excel实现
+│   │   ├── exceptions.py       # 自定义异常体系
+│   │   ├── pdf2docx.py         # PDF 转 Word 实现
+│   │   ├── pdf2excel.py        # PDF 转 Excel 实现
+│   │   └── pdf_scan2docx.py    # PDF 扫描件转 Word（OCR）实现
+│   ├── schemas/                # 数据模型层
+│   │   ├── auth.py             # 认证相关模型
+│   │   └── convert.py          # 转换相关模型
+│   ├── services/               # 业务服务层
+│   │   ├── auth_service.py     # 认证服务
+│   │   └── convert_service.py  # 文件转换服务
 │   ├── utils/                  # 工具层
 │   │   ├── api_utils.py        # API 通用处理函数
 │   │   ├── file_utils.py       # 文件操作工具
@@ -70,7 +85,7 @@ hello-tool-server/
 │   │   ├── scheduler.py        # 定时任务调度
 │   │   └── security.py         # 安全中间件
 │   └── main.py                 # 应用入口
-└── requirements.txt
+└── requirements.txt            # Python 依赖
 ```
 
 ## 配置说明
@@ -96,19 +111,42 @@ hello-tool-server/
 | `CSRF_TOKEN_EXPIRY` | `3600` | CSRF Token 过期时间（秒）              |
 | `SECURE_COOKIE`     | `True` | 是否启用 Secure Cookie（生产环境应为 True） |
 
+### CORS 配置
+
+| 环境变量                     | 默认值    | 说明               |
+|--------------------------|--------|------------------|
+| `CORS_ORIGINS`           | `*`    | 允许的来源，逗号分隔       |
+| `CORS_ALLOW_CREDENTIALS` | `True` | 是否允许携带凭证         |
+| `CORS_ALLOW_METHODS`     | `*`    | 允许的 HTTP 方法，逗号分隔 |
+| `CORS_ALLOW_HEADERS`     | `*`    | 允许的请求头，逗号分隔      |
+
 ## 安全机制
 
-- **IP访问控制**：支持白名单和黑名单
+- **IP 访问控制**：支持白名单和黑名单
 - **速率限制**：中间件级 + 路由级双重限流
-- **CSRF防护**：基于 Token 的跨站请求伪造防护
+- **CSRF 防护**：基于 Token 的跨站请求伪造防护
 - **请求头校验**：检查 User-Agent 和 Content-Type
-- **安全Cookie**：HttpOnly + Secure + SameSite
+- **安全 Cookie**：HttpOnly + Secure + SameSite
+
+## 技术栈
+
+| 类别     | 技术                                    |
+|--------|---------------------------------------|
+| Web 框架 | FastAPI + Uvicorn                     |
+| PDF 处理 | pdf2docx、tabula-py、pdfplumber、PyMuPDF |
+| OCR 识别 | RapidOCR (rapidocr-onnxruntime)       |
+| Excel  | openpyxl                              |
+| Word   | python-docx                           |
+| 限流     | slowapi                               |
+| 定时任务   | APScheduler                           |
+| 配置管理   | pydantic-settings                     |
 
 ## 注意事项
 
 - 本服务仅用于测试和学习目的，生产环境使用请自行评估风险
 - 文件上传后会在配置的过期时间后自动清理
 - 下载后的文件会立即从服务器删除
+- PDF 扫描件转 Word 使用 OCR 技术，识别精度取决于扫描件质量
 - 建议在生产环境启用 HTTPS 和 Secure Cookie
 
 ## 许可证
